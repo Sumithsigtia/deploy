@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=builder /app ./
 
 # Install only production dependencies
-RUN npm ci --omit=dev
+RUN npm ci
 
 # Expose Next.js default port
 EXPOSE 3000
