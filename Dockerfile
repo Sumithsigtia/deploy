@@ -1,29 +1,37 @@
-# Stage 1: build
+# =========================
+# Stage 1: Build Stage
+# =========================
 FROM node:18-alpine AS builder
 
+# Set working directory
 WORKDIR /app
 
-# Copy package files first for caching
+# Install dependencies first (for caching)
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm ci
 
-# Copy the rest of the app
+# Copy the rest of the application
 COPY . .
 
 # Build the Next.js app
 RUN npm run build
 
-# Stage 2: production image
+# =========================
+# Stage 2: Production Stage
+# =========================
 FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
-# Copy built files from builder
+# Copy built app and dependencies from builder
 COPY --from=builder /app ./
 
 # Install only production dependencies
-RUN npm install --production
+RUN npm ci --omit=dev
 
+# Expose Next.js default port
 EXPOSE 3000
 
+# Start the app
 CMD ["npm", "start"]
