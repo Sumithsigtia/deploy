@@ -30,8 +30,8 @@ COPY --from=builder /app ./
 # Install only production dependencies
 RUN npm ci
 
-# Expose Next.js default port
-EXPOSE 3000
+# Expose the port Azure expects
+EXPOSE 80
 
-# Start the app
-CMD ["npm", "start"]
+# Start the app on the port Azure assigns
+CMD ["sh", "-c", "npm start -- -p ${PORT:-80}"]
