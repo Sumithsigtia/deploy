@@ -1,25 +1,28 @@
-# Step 1: Build the app
+# Stage 1: build
 FROM node:18-alpine AS builder
+
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --legacy-peer-deps
+# Copy package files first for caching
+COPY package.json package-lock.json ./
+RUN npm install
 
+# Copy the rest of the app
 COPY . .
+
+# Build the Next.js app
 RUN npm run build
 
-# Step 2: Run the app
-FROM node:18-alpine AS runner
+# Stage 2: production image
+FROM node:18-alpine
+
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Copy built files from builder
+COPY --from=builder /app ./
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./next.config.js
-
-RUN npm install --omit=dev --legacy-peer-deps
+# Install only production dependencies
+RUN npm install --production
 
 EXPOSE 3000
 
