@@ -1,29 +1,35 @@
-# Stage 1: build
-FROM node:18-alpine AS builder
-WORKDIR /app
+name: Build and Push to ACR
 
-# Copy package files
-COPY package.json package-lock.json ./
+on:
+  push:
+    branches:
+      - main  # or your default branch
 
-# Install all dependencies (dev + prod)
-RUN npm install
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
 
-# Copy the rest of the app
-COPY . .
+    steps:
+      # 1. Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-# Build Next.js
-RUN npm run build
+      # 2. Login to ACR
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
 
-# Stage 2: production image
-FROM node:18-alpine
-WORKDIR /app
+      # 3. Build Docker image
+      - name: Build Docker Image
+        run: |
+          IMAGE_NAME=${{ secrets.ACR_LOGIN_SERVER }}/nextjs-app:latest
+          docker build -t $IMAGE_NAME .
 
-# Copy built files from builder
-COPY --from=builder /app ./
-
-# Install only production dependencies
-RUN npm install --production
-
-EXPOSE 3000
-
-CMD ["npm", "start"]
+      # 4. Push image to ACR
+      - name: Push Docker Image
+        run: |
+          IMAGE_NAME=${{ secrets.ACR_LOGIN_SERVER }}/nextjs-app:latest
+          docker push $IMAGE_NAME
